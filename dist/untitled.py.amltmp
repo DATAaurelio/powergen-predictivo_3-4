@@ -1,0 +1,23 @@
+import pandas as pd
+import numpy as np
+
+def generar_variables_temporales(df):
+    df = df.sort_values(by=["ID_Equipo", "Fecha"])
+    
+    # Rolling means (3 días)
+    df['Temp_RollingMean_3'] = df.groupby('ID_Equipo')['Temperatura_C'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
+    df['Vib_RollingMean_3'] = df.groupby('ID_Equipo')['Vibracion_mm_s'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
+    df['Horas_RollingMean_3'] = df.groupby('ID_Equipo')['Horas_Operativas'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
+    
+    # Cambios diarios
+    df['Temp_Diff_1'] = df.groupby('ID_Equipo')['Temperatura_C'].diff().fillna(0)
+    df['Vib_Diff_1'] = df.groupby('ID_Equipo')['Vibracion_mm_s'].diff().fillna(0)
+    df['Horas_Diff_1'] = df.groupby('ID_Equipo')['Horas_Operativas'].diff().fillna(0)
+
+    return df
+
+def generar_variable_objetivo(df):
+    # Variable binaria: fallo en los próximos 15 días
+    df['Fallo_Prox15'] = df.groupby('ID_Equipo')['Tipo_Mantenimiento'].shift(-15)
+    df['Fallo_Prox15'] = df['Fallo_Prox15'].apply(lambda x: 0 if x == 'Sin Mantenimiento' or pd.isna(x) else 1)
+    return df
